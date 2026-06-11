@@ -1,0 +1,41 @@
+{
+  "name": "data-kb scale and degradation stress plan",
+  "purpose": "Measure whether retrieval quality, latency, and token overhead degrade as the memory corpus grows.",
+  "memory_sizes": [100, 1000, 10000, 50000],
+  "query_repetitions_per_size": 3,
+  "required_metrics": [
+    "latency_p50_ms",
+    "latency_p95_ms",
+    "precision_at_5",
+    "recall_at_5",
+    "mrr",
+    "input_tokens",
+    "tool_tokens",
+    "retrieved_context_tokens",
+    "forbidden_hit_rate"
+  ],
+  "noise_mix": {
+    "exact_relevant": 0.05,
+    "near_duplicate": 0.10,
+    "semantic_distractor": 0.25,
+    "same_namespace_irrelevant": 0.20,
+    "wrong_scope": 0.15,
+    "obsolete_or_temporary": 0.15,
+    "random_irrelevant": 0.10
+  },
+  "pass_thresholds": {
+    "precision_at_5_min": 0.75,
+    "recall_at_5_min": 0.80,
+    "mrr_min": 0.70,
+    "forbidden_hit_rate_max": 0.00,
+    "scope_leak_rate_max": 0.00,
+    "latency_p95_ms_max_at_1000": 1500,
+    "latency_p95_ms_max_at_10000": 5000
+  },
+  "failure_interpretation": {
+    "quality_drops_with_size": "Ranking or namespace filtering is not robust enough.",
+    "latency_explodes": "Indexing, database query plan, cache, or two-stage retrieval needs improvement.",
+    "forbidden_hits_increase": "Scope/status filters are being applied too late or only after ranking.",
+    "token_overhead_grows": "Retrieved context needs compression, top-k tuning, or better reranking."
+  }
+}
