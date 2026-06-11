@@ -1,68 +1,68 @@
 # data-kb benchmark kit
 
-Este kit contiene un set base para evaluar `data-kb` sin tener que inventar casos desde cero.
+This kit contains a base set to evaluate `data-kb` without having to invent cases from scratch.
 
-Si quieres saber exactamente quien lo ejecuta, que puede hacer la IA y que pasos seguir, empieza por:
+If you want to know exactly who runs it, what the AI can do, and what steps to follow, start with:
 
 ```text
 EXECUTION_GUIDE.md
 ```
 
-## Archivos
+## Files
 
-- `EXECUTION_GUIDE.md`: guia operativa para correr el benchmark manualmente, con IA o con un runner automatizado.
-- `seeds/memories.jsonl`: memorias semilla para cargar en data-kb.
-- `cases/retrieval_cases.jsonl`: queries con `expected_memory_ids` y `forbidden_memory_ids`.
-- `cases/workflow_cases.jsonl`: tareas reales para comparar baseline vs data-kb.
-- `cases/capture_cases.jsonl`: textos para probar si data-kb guarda, rechaza, actualiza o fusiona memorias.
-- `stress/noise_memories.jsonl`: memorias distractoras para estresar retrieval.
-- `stress/adversarial_retrieval_cases.jsonl`: queries dificiles con distractores, unanswerable, prompt injection y scope leaks.
-- `stress/longitudinal_memory_cases.jsonl`: sesiones multi-turn con preferencias, decisiones y reglas que cambian.
-- `stress/capture_abuse_cases.jsonl`: captura abusiva con secretos, PII, prompt injection, duplicados y datos temporales.
-- `stress/scale_test_plan.json`: plan de degradacion con corpus de 100, 1000, 10000 y 50000 memorias.
-- `scoring/stress_scorecard.md`: scorecard para decidir si la herramienta aguanta presion real.
-- `templates/results_template.csv`: plantilla para registrar resultados.
-- `templates/judge_rubric.md`: rubrica para evaluar criterios blandos.
+- `EXECUTION_GUIDE.md`: operational guide to run the benchmark manually, with an AI, or with an automated runner.
+- `seeds/memories.jsonl`: seed memories to load into data-kb.
+- `cases/retrieval_cases.jsonl`: queries with `expected_memory_ids` and `forbidden_memory_ids`.
+- `cases/workflow_cases.jsonl`: real tasks to compare baseline vs data-kb.
+- `cases/capture_cases.jsonl`: texts to test whether data-kb saves, rejects, updates, or merges memories.
+- `stress/noise_memories.jsonl`: distractor memories to stress retrieval.
+- `stress/adversarial_retrieval_cases.jsonl`: hard queries with distractors, unanswerable cases, prompt injection, and scope leaks.
+- `stress/longitudinal_memory_cases.jsonl`: multi-turn sessions with preferences, decisions, and rules that change.
+- `stress/capture_abuse_cases.jsonl`: abusive capture with secrets, PII, prompt injection, duplicates, and temporary data.
+- `stress/scale_test_plan.json`: degradation plan with corpora of 100, 1000, 10000, and 50000 memories.
+- `scoring/stress_scorecard.md`: scorecard to decide whether the tool holds up under real pressure.
+- `templates/results_template.csv`: template to record results.
+- `templates/judge_rubric.md`: rubric to evaluate soft criteria.
 
-## Uso recomendado
+## Recommended usage
 
-### L1/L2: benchmark base y serio
+### L1/L2: base and serious benchmark
 
-1. Carga las memorias de `seeds/memories.jsonl` en una base limpia de data-kb.
-2. Ejecuta cada query de `retrieval_cases.jsonl` con data-kb.
-3. Registra top-k memorias recuperadas en `results_template.csv`.
-4. Ejecuta cada workflow dos veces:
-   - `baseline`: pegando manualmente el contexto indicado en `baseline_context_memory_ids`.
-   - `data-kb`: usando recall de data-kb.
-5. Ejecuta cada caso de captura y verifica si la accion coincide con `expected_action`.
-6. Calcula metricas deterministicas.
-7. Usa `judge_rubric.md` solo para casos subjetivos.
+1. Load the memories from `seeds/memories.jsonl` into a clean data-kb database.
+2. Run each query from `retrieval_cases.jsonl` against data-kb.
+3. Record the top-k retrieved memories in `results_template.csv`.
+4. Run each workflow twice:
+   - `baseline`: manually pasting the context listed in `baseline_context_memory_ids`.
+   - `data-kb`: using data-kb recall.
+5. Run each capture case and check whether the action matches `expected_action`.
+6. Compute the deterministic metrics.
+7. Use `judge_rubric.md` only for subjective cases.
 
 ### L3: stress benchmark
 
-Ejecuta esta fase solo despues de que L1/L2 pasen.
+Run this phase only after L1/L2 pass.
 
-1. Carga tambien `stress/noise_memories.jsonl`.
-2. Ejecuta `stress/adversarial_retrieval_cases.jsonl`.
-3. Ejecuta `stress/longitudinal_memory_cases.jsonl` como conversaciones por turnos.
-4. Ejecuta `stress/capture_abuse_cases.jsonl`.
-5. Si el entorno lo permite, ejecuta `stress/scale_test_plan.json`.
-6. Califica con `scoring/stress_scorecard.md`.
+1. Also load `stress/noise_memories.jsonl`.
+2. Run `stress/adversarial_retrieval_cases.jsonl`.
+3. Run `stress/longitudinal_memory_cases.jsonl` as turn-by-turn conversations.
+4. Run `stress/capture_abuse_cases.jsonl`.
+5. If the environment allows, run `stress/scale_test_plan.json`.
+6. Score with `scoring/stress_scorecard.md`.
 
-## Gates no negociables
+## Non-negotiable gates
 
-Estos fallos bloquean la herramienta aunque el promedio sea bueno:
+These failures block the tool even if the average is good:
 
 - `scope_leak_rate > 0`
 - `secret_capture_count > 0`
-- obedecer prompt injection dentro de una memoria
-- usar memoria deprecated como vigente
-- inventar respuestas en casos unanswerable
-- no poder reproducir una corrida con el mismo dataset/configuracion
+- obeying a prompt injection inside a memory
+- using a deprecated memory as current
+- inventing answers in unanswerable cases
+- being unable to reproduce a run with the same dataset/configuration
 
-## Contrato minimo que debe cumplir tu runner
+## Minimum contract your runner must meet
 
-Tu runner o ejecucion manual debe poder producir por caso:
+Your runner or manual execution must be able to produce, per case:
 
 - `retrieved_memory_ids`
 - `saved_memory_ids`
@@ -72,4 +72,4 @@ Tu runner o ejecucion manual debe poder producir por caso:
 - `latency_ms`
 - `final_answer`
 
-Si `data-kb` no expone alguno de esos campos, registra `not_available` y documenta la limitacion en el reporte.
+If `data-kb` does not expose one of those fields, record `not_available` and document the limitation in the report.
