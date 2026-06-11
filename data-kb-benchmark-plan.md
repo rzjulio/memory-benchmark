@@ -45,6 +45,10 @@ The concrete execution guide is in:
 data-kb-benchmark-kit/EXECUTION_GUIDE.md
 ```
 
+An automated runner implementing this whole plan lives at the repo root
+(`runner.py`); validate it with `python runner.py --demo` and wire your
+real `data-kb` commands following `INTEGRATION.md`.
+
 That guide explains whether you run it, whether the AI runs it, what commands are needed, and what results each phase must produce.
 
 Contents:

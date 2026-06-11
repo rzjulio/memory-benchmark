@@ -2,6 +2,13 @@
 
 This guide explains how to run the benchmark, what the AI can do, what you must configure, and what steps to follow to get reliable conclusions.
 
+> **An automated runner now exists at the repo root** (`runner.py` +
+> `scorer.py` + `reporter.py` + `benchmark_config.toml`). It implements
+> every phase in this guide, writes all the result files listed below, and
+> ships a mock adapter so you can validate the pipeline with
+> `python runner.py --demo` before wiring real commands.
+> See `../INTEGRATION.md` for exactly what to configure.
+
 ## Short answer
 
 The benchmark does not run on its own just by having the JSONL files.
@@ -448,13 +455,18 @@ If those commands are missing, the AI can prepare data and documents, but it can
 
 ## Natural next step
 
-The next useful deliverable would be a configurable `runner.py`:
+This deliverable now exists at the repo root:
 
 ```text
-benchmark_config.yaml
-runner.py
-scorer.py
-reporter.py
+benchmark_config.toml   # configuration (TOML: stdlib-parseable, supports comments)
+runner.py               # orchestrates all phases
+scorer.py               # deterministic metrics and gates
+reporter.py             # metrics.json + report.md + results.csv
+adapters.py             # CommandAdapter (real data-kb) + MockAdapter (demo)
+tools/generate_scale_corpus.py  # corpora for the scale phase
 ```
 
-That runner must not contain benchmark-specific logic hardcoded. It must read the JSONL, run the configured `data-kb` commands, compute metrics, and generate the report.
+The runner contains no benchmark-specific logic hardcoded: it reads the
+JSONL, executes the `data-kb` commands configured in
+`benchmark_config.toml`, computes the metrics, and generates the report.
+Wiring instructions: `../INTEGRATION.md`.
