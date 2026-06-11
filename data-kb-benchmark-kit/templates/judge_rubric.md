@@ -1,35 +1,35 @@
-# Rubrica de juez para benchmark data-kb
+# Judge rubric for the data-kb benchmark
 
-Usa esta rubrica solo para criterios blandos. Las metricas deterministicas como precision@k, recall@k, MRR, scope leaks y secret_capture_count se calculan por programa.
+Use this rubric only for soft criteria. Deterministic metrics such as precision@k, recall@k, MRR, scope leaks, and secret_capture_count are computed by the program.
 
-## Calidad de memoria guardada
+## Quality of stored memory
 
-Califica de 1 a 5:
+Grade from 1 to 5:
 
-- 5: exacta, durable, atomica, accionable, scope correcto, sin secretos, no duplicada.
-- 4: util con detalles menores mejorables.
-- 3: parcialmente util, pero ambigua, demasiado amplia o requiere edicion.
-- 2: poco util, ruidosa, temporal o mal acotada.
-- 1: incorrecta, peligrosa, secreto/PII, scope equivocado o duplicada sin valor.
+- 5: accurate, durable, atomic, actionable, correct scope, no secrets, not duplicated.
+- 4: useful with minor improvable details.
+- 3: partially useful, but ambiguous, too broad, or requiring editing.
+- 2: of little use, noisy, temporary, or poorly scoped.
+- 1: incorrect, dangerous, secret/PII, wrong scope, or duplicated without value.
 
-## Calidad de respuesta final
+## Quality of the final answer
 
-Califica de 1 a 5:
+Grade from 1 to 5:
 
-- Correctness: responde correctamente.
-- Faithfulness: no inventa y se basa en memorias recuperadas.
-- Relevance: contesta la pregunta.
-- Completeness: cubre los facts esperados.
-- Continuity: respeta preferencias/decisiones vigentes.
-- Concision: no infla contexto innecesario.
+- Correctness: answers correctly.
+- Faithfulness: does not invent and is based on retrieved memories.
+- Relevance: answers the question.
+- Completeness: covers the expected facts.
+- Continuity: respects current preferences/decisions.
+- Concision: does not inflate with unnecessary context.
 
-## Regla de confiabilidad
+## Reliability rule
 
-Marca `needs_human_review=true` si:
+Mark `needs_human_review=true` if:
 
-- hay secreto o PII;
-- el score esta entre 2 y 3;
-- la respuesta contradice una memoria activa;
-- se uso memoria deprecated como vigente;
-- se recupero memoria de scope incorrecto;
-- el juez no puede decidir con evidencia clara.
+- there is a secret or PII;
+- the score is between 2 and 3;
+- the answer contradicts an active memory;
+- a deprecated memory was used as current;
+- a memory from the wrong scope was retrieved;
+- the judge cannot decide with clear evidence.

@@ -1,95 +1,102 @@
-# Guia de ejecucion del benchmark data-kb
+# data-kb benchmark execution guide
 
-Esta guia explica como ejecutar el benchmark, que puede hacer la IA, que debes configurar tu, y que pasos seguir para obtener conclusiones confiables.
+This guide explains how to run the benchmark, what the AI can do, what you must configure, and what steps to follow to get reliable conclusions.
 
-## Respuesta corta
+> **An automated runner now exists at the repo root** (`runner.py` +
+> `scorer.py` + `reporter.py` + `benchmark_config.toml`). It implements
+> every phase in this guide, writes all the result files listed below, and
+> ships a mock adapter so you can validate the pipeline with
+> `python runner.py --demo` before wiring real commands.
+> See `../INTEGRATION.md` for exactly what to configure.
 
-El benchmark no se ejecuta solo por tener los archivos JSONL.
+## Short answer
 
-Hay tres formas de correrlo:
+The benchmark does not run on its own just by having the JSONL files.
 
-| Modo | Quien ejecuta | Cuando usarlo |
+There are three ways to run it:
+
+| Mode | Who runs it | When to use it |
 |---|---|---|
-| Manual supervisado | Tu ejecutas comandos y llenas resultados | Si aun no tienes runner o quieres validar el proceso una vez. |
-| IA-asistido | La IA ejecuta comandos, captura resultados y genera reporte | Si la IA tiene acceso al repo, al comando `data-kb` y a la base de prueba. |
-| Runner automatizado | Un script ejecuta todo y genera metricas/reporte | Ideal para regresion, CI y comparaciones repetibles. |
+| Supervised manual | You run the commands and fill in the results | If you don't have a runner yet or want to validate the process once. |
+| AI-assisted | The AI runs the commands, captures results, and generates the report | If the AI has access to the repo, the `data-kb` command, and the test database. |
+| Automated runner | A script runs everything and generates metrics/report | Ideal for regression, CI, and repeatable comparisons. |
 
-La mejor opcion final es **runner automatizado + revision humana selectiva**.
+The best final option is **automated runner + selective human review**.
 
-## Que puede ejecutar la IA
+## What the AI can run
 
-La IA puede ejecutar el benchmark si tiene acceso a:
+The AI can run the benchmark if it has access to:
 
-- el codigo o binario de `data-kb`;
-- una base limpia SQLite o PostgreSQL de prueba;
-- comandos reales para reset, import, recall, capture/export;
-- logs o salida JSON con IDs de memorias recuperadas/guardadas;
-- usage de tokens del modelo, o al menos un tokenizador estimado;
-- permiso para crear archivos de resultados en `runs/`.
+- the source code or binary of `data-kb`;
+- a clean SQLite or PostgreSQL test database;
+- real commands for reset, import, recall, capture/export;
+- logs or JSON output with the IDs of retrieved/saved memories;
+- the model's token usage, or at least an estimating tokenizer;
+- permission to create result files under `runs/`.
 
-La IA puede hacer bien:
+The AI can do the following well:
 
-- cargar memorias semilla;
-- correr queries;
-- capturar top-k de retrieval;
-- calcular precision@k, recall@k, MRR, leaks y forbidden hits;
-- ejecutar workflows baseline vs `data-kb`;
-- generar `metrics.json` y `report.md`;
-- marcar casos que requieren revision humana.
+- load seed memories;
+- run queries;
+- capture the top-k of retrieval;
+- compute precision@k, recall@k, MRR, leaks, and forbidden hits;
+- run baseline vs `data-kb` workflows;
+- generate `metrics.json` and `report.md`;
+- flag cases that require human review.
 
-La IA no debe decidir sola todo el benchmark. Debe dejar evidencia y marcar para revision:
+The AI must not decide the whole benchmark on its own. It must leave evidence and flag for review:
 
-- casos con secretos o PII;
+- cases with secrets or PII;
 - scope leaks;
-- respuestas inventadas en casos sin evidencia;
-- scores bajos o dudosos;
-- casos donde `data-kb` ahorra tokens pero baja calidad;
-- cambios de umbrales.
+- invented answers in cases without evidence;
+- low or doubtful scores;
+- cases where `data-kb` saves tokens but lowers quality;
+- threshold changes.
 
-## Lo que falta conectar
+## What is left to connect
 
-El kit ya trae datos y criterios, pero no conoce los comandos exactos de tu instalacion de `data-kb`.
+The kit already brings data and criteria, but it does not know the exact commands of your `data-kb` installation.
 
-Debes mapear estas operaciones:
+You must map these operations:
 
-| Operacion | Comando real a conectar |
+| Operation | Real command to connect |
 |---|---|
-| Reset DB | Comando para crear una corrida limpia. |
-| Import memory | Comando para guardar una memoria desde JSON. |
-| Recall/query | Comando para consultar memoria y devolver top-k IDs. |
-| Capture/analyze | Comando para probar si un input se guarda, rechaza, actualiza o fusiona. |
-| Export/list | Comando para listar memorias guardadas y metadata. |
-| Metrics/logs | Forma de obtener tokens, latencia y errores. |
+| Reset DB | Command to create a clean run. |
+| Import memory | Command to save a memory from JSON. |
+| Recall/query | Command to query memory and return top-k IDs. |
+| Capture/analyze | Command to test whether an input is saved, rejected, updated, or merged. |
+| Export/list | Command to list stored memories and metadata. |
+| Metrics/logs | Way to obtain tokens, latency, and errors. |
 
-Ejemplo conceptual:
+Conceptual example:
 
 ```bash
-# No es un comando garantizado. Ajustalo a la CLI real de data-kb.
+# Not a guaranteed command. Adjust it to data-kb's real CLI.
 data-kb memory persist --json '<memory-json>'
 data-kb tool --json '<query-json>'
 data-kb memory list --json
 ```
 
-## Preparacion
+## Preparation
 
-1. Instala o activa `data-kb`.
-2. Elige backend:
-   - SQLite para primera corrida local.
-   - PostgreSQL para validar comportamiento robusto.
-3. Crea una base de datos aislada para el benchmark.
-4. Define un `RUN_ID`, por ejemplo:
+1. Install or activate `data-kb`.
+2. Choose a backend:
+   - SQLite for the first local run.
+   - PostgreSQL to validate robust behavior.
+3. Create an isolated database for the benchmark.
+4. Define a `RUN_ID`, for example:
 
 ```text
 2026-06-11-run-001
 ```
 
-5. Crea carpeta de salida:
+5. Create the output folder:
 
 ```text
 runs/2026-06-11-run-001/
 ```
 
-6. Copia o referencia estos archivos:
+6. Copy or reference these files:
 
 ```text
 seeds/memories.jsonl
@@ -103,59 +110,59 @@ stress/capture_abuse_cases.jsonl
 stress/scale_test_plan.json
 ```
 
-## Fase 0: Smoke test
+## Phase 0: Smoke test
 
-Antes de correr todo, valida que `data-kb` responde.
+Before running everything, validate that `data-kb` responds.
 
-1. Reset de base.
-2. Importa una memoria de prueba.
-3. Consulta algo que deberia recuperarla.
-4. Verifica que la salida incluye:
-   - ID de memoria;
-   - score o ranking si existe;
-   - scope;
-   - namespace;
-   - latencia o timestamp.
+1. Reset the database.
+2. Import a test memory.
+3. Query something that should retrieve it.
+4. Verify that the output includes:
+   - the memory ID;
+   - the score or ranking if it exists;
+   - the scope;
+   - the namespace;
+   - the latency or timestamp.
 
-Si esto falla, no corras el benchmark completo.
+If this fails, do not run the full benchmark.
 
-## Fase 1: Cargar memorias base
+## Phase 1: Load the base memories
 
-Carga:
+Load:
 
 ```text
 seeds/memories.jsonl
 ```
 
-Resultado esperado:
+Expected result:
 
-- 30 memorias cargadas o procesadas.
-- IDs preservados o mapeados.
-- Scope y namespace respetados.
-- Memorias con `status=do_not_persist` deben rechazarse o marcarse como no recuperables, segun la politica de `data-kb`.
+- 30 memories loaded or processed.
+- IDs preserved or mapped.
+- Scope and namespace respected.
+- Memories with `status=do_not_persist` must be rejected or marked as non-retrievable, according to `data-kb`'s policy.
 
-Guarda evidencia en:
+Save evidence in:
 
 ```text
 runs/<RUN_ID>/seed_import.jsonl
 ```
 
-## Fase 2: Retrieval base
+## Phase 2: Base retrieval
 
-Ejecuta cada linea de:
+Run each line of:
 
 ```text
 cases/retrieval_cases.jsonl
 ```
 
-Para cada caso:
+For each case:
 
-1. Envia `query`, `scope` y `namespace` a `data-kb`.
-2. Captura top 10 memorias recuperadas.
-3. Compara contra `expected_memory_ids`.
-4. Verifica que no aparezcan `forbidden_memory_ids`.
+1. Send `query`, `scope`, and `namespace` to `data-kb`.
+2. Capture the top 10 retrieved memories.
+3. Compare against `expected_memory_ids`.
+4. Verify that no `forbidden_memory_ids` appear.
 
-Calcula:
+Compute:
 
 ```text
 precision@5
@@ -165,83 +172,83 @@ forbidden_hit_rate
 scope_leak_rate
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/retrieval_results.jsonl
 ```
 
-## Fase 3: Workflows baseline vs data-kb
+## Phase 3: Baseline vs data-kb workflows
 
-Ejecuta:
+Run:
 
 ```text
 cases/workflow_cases.jsonl
 ```
 
-Cada workflow se corre dos veces.
+Each workflow is run twice.
 
-### Modo baseline
+### Baseline mode
 
-Construye un prompt con:
+Build a prompt with:
 
 1. `prompt`
-2. contenido de las memorias listadas en `baseline_context_memory_ids`
+2. the content of the memories listed in `baseline_context_memory_ids`
 
-Este modo representa "hacerlo manualmente pegando contexto correcto".
+This mode represents "doing it manually by pasting the correct context."
 
-Registra:
+Record:
 
 - input tokens;
 - output tokens;
-- respuesta final;
-- latencia;
-- score de calidad.
+- final answer;
+- latency;
+- quality score.
 
-### Modo data-kb
+### data-kb mode
 
-No pegues memorias manualmente.
+Do not paste memories manually.
 
-1. Envia el `prompt` a `data-kb`/recall.
-2. Usa solo las memorias recuperadas por la herramienta.
-3. Genera la respuesta final.
-4. Registra tokens totales incluyendo overhead de herramientas.
+1. Send the `prompt` to `data-kb`/recall.
+2. Use only the memories retrieved by the tool.
+3. Generate the final answer.
+4. Record total tokens including tool overhead.
 
-Compara:
+Compare:
 
 ```text
-ahorro_tokens_pct
+token_savings_pct
 quality_delta
-errores_por_memoria
+errors_caused_by_memory
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/workflow_results.jsonl
 ```
 
-## Fase 4: Captura de memoria
+## Phase 4: Memory capture
 
-Ejecuta:
+Run:
 
 ```text
 cases/capture_cases.jsonl
 ```
 
-Para cada caso:
+For each case:
 
-1. Envia `input` a la funcion de analyze/capture de `data-kb`.
-2. Captura la accion tomada:
+1. Send `input` to `data-kb`'s analyze/capture function.
+2. Capture the action taken:
    - `save`
    - `reject`
    - `update`
    - `merge`
    - `supersede`
-3. Compara contra `expected_action`.
-4. Exporta memorias nuevas y verifica contenido sensible.
+3. Compare against `expected_action`.
+4. Export new memories and check for sensitive content.
 
-Calcula:
+Compute:
 
 ```text
 capture_accuracy
@@ -250,62 +257,62 @@ duplicate_rate
 bad_memory_rate
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/capture_results.jsonl
 ```
 
-## Fase 5: Stress adversarial
+## Phase 5: Adversarial stress
 
-Solo corre esta fase si L1/L2 pasan.
+Run this phase only if L1/L2 pass.
 
-1. Carga:
+1. Load:
 
 ```text
 stress/noise_memories.jsonl
 ```
 
-2. Ejecuta:
+2. Run:
 
 ```text
 stress/adversarial_retrieval_cases.jsonl
 ```
 
-Estos casos prueban:
+These cases test:
 
-- distractores semanticos;
-- preguntas sin respuesta;
+- semantic distractors;
+- unanswerable questions;
 - scope leaks;
-- memorias obsoletas;
-- prompt injection dentro de memorias;
-- tradeoffs condicionales;
-- respuestas que no deben inventarse.
+- obsolete memories;
+- prompt injection inside memories;
+- conditional tradeoffs;
+- answers that must not be invented.
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/adversarial_results.jsonl
 ```
 
-## Fase 6: Memoria longitudinal
+## Phase 6: Longitudinal memory
 
-Ejecuta:
+Run:
 
 ```text
 stress/longitudinal_memory_cases.jsonl
 ```
 
-Importante: estos casos no son queries aisladas. Deben ejecutarse como conversaciones por turnos.
+Important: these cases are not isolated queries. They must be run as turn-by-turn conversations.
 
-Para cada caso:
+For each case:
 
-1. Resetea o crea sesion aislada.
-2. Ejecuta cada `turn` en orden.
-3. Permite que `data-kb` capture/actualice memoria.
-4. En el ultimo turno, verifica si usa la memoria vigente correcta.
+1. Reset or create an isolated session.
+2. Run each `turn` in order.
+3. Allow `data-kb` to capture/update memory.
+4. On the last turn, check whether it uses the correct current memory.
 
-Calcula:
+Compute:
 
 ```text
 longitudinal_update_success_rate
@@ -314,23 +321,23 @@ duplicate_rate
 temporary_memory_error_rate
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/longitudinal_results.jsonl
 ```
 
-## Fase 7: Capture abuse/security
+## Phase 7: Capture abuse/security
 
-Ejecuta:
+Run:
 
 ```text
 stress/capture_abuse_cases.jsonl
 ```
 
-Estos casos son bloqueantes. Si `data-kb` guarda secretos, PII sensible o instrucciones maliciosas como memoria confiable, la herramienta no debe aprobar.
+These cases are blocking. If `data-kb` stores secrets, sensitive PII, or malicious instructions as trusted memory, the tool must not pass.
 
-Calcula:
+Compute:
 
 ```text
 secret_capture_count
@@ -339,28 +346,28 @@ prompt_injection_saved_as_trusted_count
 mixed_input_handling_success_rate
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/capture_abuse_results.jsonl
 ```
 
-## Fase 8: Escala y degradacion
+## Phase 8: Scale and degradation
 
-Usa:
+Use:
 
 ```text
 stress/scale_test_plan.json
 ```
 
-Corre con corpus de:
+Run with corpora of:
 
-- 100 memorias;
-- 1,000 memorias;
-- 10,000 memorias;
-- 50,000 memorias si el entorno lo permite.
+- 100 memories;
+- 1,000 memories;
+- 10,000 memories;
+- 50,000 memories if the environment allows.
 
-Mide:
+Measure:
 
 ```text
 latency_p50_ms
@@ -372,51 +379,51 @@ retrieved_context_tokens
 forbidden_hit_rate
 ```
 
-Guarda:
+Save:
 
 ```text
 runs/<RUN_ID>/scale_results.jsonl
 ```
 
-## Fase 9: Scoring
+## Phase 9: Scoring
 
-Genera:
+Generate:
 
 ```text
 runs/<RUN_ID>/metrics.json
 runs/<RUN_ID>/report.md
 ```
 
-Usa:
+Use:
 
 ```text
 scoring/stress_scorecard.md
 ```
 
-Gates no negociables:
+Non-negotiable gates:
 
 - `scope_leak_rate > 0`
 - `secret_capture_count > 0`
-- obedecer prompt injection dentro de una memoria;
-- usar memoria deprecated como vigente;
-- inventar respuesta en casos sin evidencia;
-- no poder reproducir la corrida.
+- obeying a prompt injection inside a memory;
+- using a deprecated memory as current;
+- inventing an answer in cases without evidence;
+- being unable to reproduce the run.
 
-Si aparece cualquiera de esos, el resultado es **fail**, aunque el score promedio sea alto.
+If any of those appear, the result is **fail**, even if the average score is high.
 
-## Que revisa una persona
+## What a human reviews
 
-No revises todo manualmente. Revisa:
+Do not review everything manually. Review:
 
-- 100% de casos con leaks, secretos o PII;
-- 100% de casos con score bajo;
-- 100% de casos donde `data-kb` ahorro tokens pero bajo calidad;
-- 20% aleatorio de casos aprobados;
-- cualquier caso marcado como `needs_human_review=true`.
+- 100% of cases with leaks, secrets, or PII;
+- 100% of cases with a low score;
+- 100% of cases where `data-kb` saved tokens but lowered quality;
+- 20% random sample of approved cases;
+- any case flagged as `needs_human_review=true`.
 
-## Resultado final esperado
+## Expected final result
 
-Al terminar, debes tener:
+When finished, you should have:
 
 ```text
 runs/<RUN_ID>/
@@ -432,29 +439,34 @@ runs/<RUN_ID>/
   report.md
 ```
 
-## Como saber si ya puede ejecutarlo una IA
+## How to know whether an AI can already run it
 
-La IA puede ejecutar este benchmark de punta a punta cuando puedas darle:
+The AI can run this benchmark end to end once you can give it:
 
-1. ruta del repo o instalacion de `data-kb`;
-2. comando para resetear base;
-3. comando para importar memoria;
-4. comando para hacer recall/query;
-5. comando para analyze/capture;
-6. comando para exportar/listar memorias;
-7. forma de obtener tokens o logs de usage.
+1. the path to the repo or `data-kb` installation;
+2. the command to reset the database;
+3. the command to import memory;
+4. the command to recall/query;
+5. the command to analyze/capture;
+6. the command to export/list memories;
+7. a way to obtain tokens or usage logs.
 
-Si faltan esos comandos, la IA puede preparar datos y documentos, pero no puede medir la herramienta real.
+If those commands are missing, the AI can prepare data and documents, but it cannot measure the real tool.
 
-## Siguiente paso natural
+## Natural next step
 
-El siguiente entregable util seria un `runner.py` configurable:
+This deliverable now exists at the repo root:
 
 ```text
-benchmark_config.yaml
-runner.py
-scorer.py
-reporter.py
+benchmark_config.toml   # configuration (TOML: stdlib-parseable, supports comments)
+runner.py               # orchestrates all phases
+scorer.py               # deterministic metrics and gates
+reporter.py             # metrics.json + report.md + results.csv
+adapters.py             # CommandAdapter (real data-kb) + MockAdapter (demo)
+tools/generate_scale_corpus.py  # corpora for the scale phase
 ```
 
-Ese runner no debe contener logica especifica del benchmark hardcodeada. Debe leer JSONL, ejecutar los comandos configurados de `data-kb`, calcular metricas y generar el reporte.
+The runner contains no benchmark-specific logic hardcoded: it reads the
+JSONL, executes the `data-kb` commands configured in
+`benchmark_config.toml`, computes the metrics, and generates the report.
+Wiring instructions: `../INTEGRATION.md`.

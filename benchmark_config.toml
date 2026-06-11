@@ -1,0 +1,142 @@
+# =============================================================================
+# data-kb benchmark configuration
+#
+# This file ships ready to run the DEMO pipeline with the mock adapter:
+#
+#     python runner.py --demo
+#
+# To benchmark the REAL data-kb you must:
+#   1. set [run].adapter = "command"
+#   2. fill in every [commands.*] section below with your real data-kb CLI
+#      (the ones shipped here are EXAMPLES — data-kb's actual flags may differ;
+#       discover them with `data-kb --help` and see INTEGRATION.md)
+#   3. optionally map your tool's action names in [action_synonyms]
+# =============================================================================
+
+[run]
+adapter = "mock"          # "mock" (demo) | "command" (real data-kb)
+kit_dir = "data-kb-benchmark-kit"
+out_dir = "runs"
+top_k = 10                # how many memories recall must return per query
+
+# Pass/fail thresholds from data-kb-benchmark-plan.md. Don't loosen these to
+# make a run pass; change them only with a documented reason.
+[thresholds]
+precision_at_5 = 0.75
+recall_at_5 = 0.80
+mrr = 0.70
+token_savings_pct = 20.0
+useful_memory_rate = 0.80
+
+[security]
+# Substrings that must never appear in persisted memories (besides the
+# per-case must_not_save_patterns). Used by the secret scanner.
+secret_patterns = ["sk-live-", "ghp_", "-----BEGIN"]
+
+[policy]
+# What to do with seed memories whose status is "do_not_persist":
+#  "send" = import them anyway and let data-kb's own filter reject them (this
+#           TESTS the filter — recommended)
+#  "skip" = never send them (use only if importing them would poison a shared DB)
+import_do_not_persist = "send"
+
+[workflows]
+# Workflow cases have no scope/namespace of their own; recall runs here.
+scope = "project"
+namespace = "project://data-kb"
+top_k = 5
+
+[longitudinal]
+reset_per_case = true     # isolate each multi-turn session
+
+# Map your tool's raw action strings -> the scorer's atomic vocabulary
+# (save, save_temporary, save_session, save_untrusted, save_other_scope,
+#  save_low_priority, partial_save, redact, reject, update, supersede,
+#  deprecate, merge, ignore). Defaults already cover common synonyms.
+[action_synonyms]
+# captured = "save"
+# discarded = "reject"
+
+# Extend/override which atomic actions satisfy an expected_action.
+# [action_equivalences]
+# save_policy_or_reject_specific_port = ["save", "reject", "partial_save"]
+
+# =============================================================================
+# Variables usable as {placeholders} inside any command below.
+# =============================================================================
+[vars]
+db = "benchmark.sqlite"
+backend = "sqlite"        # or "postgres" — run the suite once per backend
+
+# =============================================================================
+# COMMANDS — EDIT THIS SECTION FOR A REAL RUN (examples only!)
+#
+# Each command:
+#   argv      = the process to run; every token may contain {placeholders}
+#   payload   = (optional) a JSON object built from placeholders, exposed
+#               as the {payload} token (handles quoting/escaping safely)
+#   response  = dotted paths to read fields from the JSON the tool prints
+#               ("memories[].id" = field `id` of each element of `memories`)
+#   timeout_s = per-call timeout (default 120)
+#
+# Placeholders available per operation:
+#   reset    : {db} {backend} (+ anything in [vars])
+#   import   : {memory} (whole seed object), {memory.content}, {memory_json}
+#   recall   : {query} {scope} {namespace} {top_k}
+#   capture  : {input} {scope} {namespace}
+#   export   : (vars only)
+#   generate : {prompt} {context}   (optional — wire your LLM call here)
+# =============================================================================
+
+# [commands.reset]
+# argv = ["data-kb", "admin", "reset", "--db", "{db}", "--yes"]
+# response.format = "none"          # command prints no JSON
+#
+# [commands.import]
+# argv = ["data-kb", "memory", "persist", "--json", "{payload}"]
+# [commands.import.payload]
+# memory = "{memory}"               # splices the whole seed object
+# [commands.import.response]
+# id = "memory_id"                  # path to the id data-kb assigned
+# accepted = "ok"                   # optional: false => treated as rejected
+#
+# [commands.recall]
+# argv = ["data-kb", "tool", "--json", "{payload}"]
+# [commands.recall.payload]
+# action = "recall"
+# query = "{query}"
+# scope = "{scope}"
+# namespace = "{namespace}"
+# top_k = "{top_k:int}"
+# [commands.recall.response]
+# ids = "memories[].memory_id"      # REQUIRED: ordered top-k ids
+# latency_ms = "latency_ms"         # optional: else wall-clock is used
+#
+# [commands.capture]
+# argv = ["data-kb", "tool", "--json", "{payload}"]
+# [commands.capture.payload]
+# action = "analyze_memory"
+# input = "{input}"
+# scope = "{scope}"
+# namespace = "{namespace}"
+# [commands.capture.response]
+# action = "decision"               # REQUIRED: save/reject/update/merge/...
+# saved_ids = "saved[].memory_id"
+#
+# [commands.export]
+# argv = ["data-kb", "memory", "list", "--json"]
+# [commands.export.response]
+# memories = "memories[]"
+# [commands.export.fields]          # field names inside each exported item
+# id = "memory_id"
+# content = "content"
+# scope = "scope"
+# namespace = "namespace"
+# status = "status"
+#
+# [commands.generate]               # OPTIONAL: wire an LLM for workflows.
+# argv = ["python", "tools/llm_generate.py", "--prompt", "{prompt}", "--context", "{context}"]
+# [commands.generate.response]
+# answer = "answer"
+# input_tokens = "usage.input_tokens"
+# output_tokens = "usage.output_tokens"
